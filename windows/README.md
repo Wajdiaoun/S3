@@ -17,7 +17,6 @@ PowerShell :
     pip install pyinstaller
     pyinstaller --noconfirm --clean --onefile --console --name nfs2s3_engine windows/nfs2s3_engine.py
     pyinstaller --noconfirm --clean --onefile --windowed --name NFS2S3 windows/nfs2s3_windows.py
-    copy dist\\nfs2s3_engine.exe dist\\NFS2S3\\
 
 Le binaire se trouve dans dist\NFS2S3.exe. GitHub Actions construit une archive portable Windows x64 à chaque push/PR sur cette branche et publie l'archive lors d'un tag windows-v*.
 
