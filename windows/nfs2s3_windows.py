@@ -69,7 +69,7 @@ class Window(QMainWindow):
     source=self.src.text().strip();bucket=self.bucket.text().strip()
     if not Path(source).is_dir():QMessageBox.warning(self,"Source","Sélectionnez un dossier source accessible.");return
     if not bucket:QMessageBox.warning(self,"S3","Le nom du bucket est obligatoire.");return
-    if not self.engine.exists():QMessageBox.critical(self,"Moteur absent","nfs2s3_engine.py est introuvable.");return
+    if not getattr(sys,"frozen",False) and not self.engine.exists():QMessageBox.critical(self,"Moteur absent","nfs2s3_engine.py est introuvable.");return
     args=[str(self.engine),"--source",source,"--bucket",bucket,"--prefix",self.prefix.text().strip(),
       "--region",self.region.text().strip(),"--workers",str(self.workers.value()),"--verify",self.verify.currentText(),
       "--retries",str(self.retry.value())]
