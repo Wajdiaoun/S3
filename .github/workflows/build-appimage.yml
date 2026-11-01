@@ -1,0 +1,92 @@
+name: Build Linux AppImage
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget file libfuse2
+          python -m pip install --upgrade pip
+          pip install PySide6 PyInstaller
+
+      - name: Download rclone and jq
+        run: |
+          mkdir -p vendor
+          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip
+          python - <<'PY'
+          import zipfile
+          with zipfile.ZipFile('/tmp/rclone.zip') as z:
+              name=next(n for n in z.namelist() if n.endswith('/rclone'))
+              open('vendor/rclone','wb').write(z.read(name))
+          PY
+          chmod +x vendor/rclone
+          curl -fsSL https://github.com/jqlang/jq/releases/latest/download/jq-linux-amd64 -o vendor/jq
+          chmod +x vendor/jq
+
+      - name: Prepare GUI script path and build executable
+        run: |
+          python - <<'PY'
+          p='gui/s3_gui.py'
+          s=open(p).read()
+          s=s.replace('Path("/usr/share/nfs2s3/nfs2s3.sh")', 'Path(os.environ.get("NFS2S3_SCRIPT", "/usr/share/nfs2s3/nfs2s3.sh"))')
+          open(p,'w').write(s)
+          PY
+          pyinstaller --noconfirm --clean --onefile --windowed --name nfs2s3-gui gui/s3_gui.py
+
+      - name: Assemble AppDir
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/share/nfs2s3 AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
+          cp dist/nfs2s3-gui AppDir/usr/bin/
+          cp nfs2s3.sh AppDir/usr/share/nfs2s3/
+          cp vendor/rclone vendor/jq AppDir/usr/bin/
+          cp gui/nfs2s3.desktop AppDir/usr/share/applications/
+          cp gui/nfs2s3.desktop AppDir/nfs2s3.desktop
+          cp gui/nfs2s3.svg AppDir/usr/share/icons/hicolor/scalable/apps/nfs2s3.svg
+          cp gui/nfs2s3.svg AppDir/nfs2s3.svg
+          cat > AppDir/AppRun <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          export PATH="$HERE/usr/bin:$PATH"
+          export NFS2S3_SCRIPT="$HERE/usr/share/nfs2s3/nfs2s3.sh"
+          exec "$HERE/usr/bin/nfs2s3-gui" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+      - name: Create AppImage
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O /tmp/appimagetool
+          chmod +x /tmp/appimagetool
+          ARCH=x86_64 /tmp/appimagetool --no-appstream AppDir NFS2S3-x86_64.AppImage
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NFS2S3-x86_64-AppImage
+          path: NFS2S3-x86_64.AppImage
+
+      - name: Publish GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NFS2S3-x86_64.AppImage
