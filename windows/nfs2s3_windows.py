@@ -99,6 +99,10 @@ class Window(QMainWindow):
         self.speed.setText(f"{d.get('speed',0)/1024/1024:.1f} MB/s")
         self.count.setText(f"{done}/{total}");self.errors.setText(str(d.get("errors",0)))
        elif d.get("event")=="start":self.count.setText(f"0/{d.get('files',0)}")
+       elif d.get("event")=="finish":
+        self.console.appendPlainText(f"BILAN : {d.get('uploaded',0)} envoyé(s), {d.get('skipped',0)} ignoré(s), {d.get('errors',0)} erreur(s).")
+        if d.get("files",0)==0:self.console.appendPlainText("ATTENTION : aucun fichier trouvé dans le dossier source. Vérifiez que le partage NFS est monté et accessible sous cette session Windows.")
+        elif d.get("uploaded",0)==0 and d.get("skipped",0)>0:self.console.appendPlainText("Aucun nouvel envoi : les fichiers existent déjà avec la même taille et le même checksum.")
       except (ValueError,TypeError):pass
  def stop_job(self):
     if self.proc.state()!=QProcess.NotRunning:self.proc.terminate()
@@ -106,7 +110,10 @@ class Window(QMainWindow):
     self.go.setEnabled(True);self.stop.setEnabled(False)
     self.status.setText("● TERMINÉ" if code==0 else f"● ERREUR ({code})")
     self.status.setStyleSheet("color:#5ee0ad" if code==0 else "color:#fb7185")
-    if code==0:self.bar.setValue(100);self.bar.setFormat("Transfert terminé")
+    if code==0:
+      self.bar.setValue(100);self.bar.setFormat("Traitement terminé — consultez le bilan dans Journal")
+    else:
+      self.console.appendPlainText(f"Le moteur s’est arrêté avec le code {code}. Consultez les dernières lignes du journal pour le détail.")
 def main():
  app=QApplication(sys.argv);app.setStyle("Fusion");app.setStyleSheet(DARK);w=Window();w.show();sys.exit(app.exec())
 if __name__=="__main__":main()
