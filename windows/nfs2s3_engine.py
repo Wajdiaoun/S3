@@ -55,7 +55,7 @@ def main():
             except OSError as e: emit("error",file=str(f),message=str(e))
     total=sum(x[2] for x in files); emit("start",files=len(files),bytes=total,dry_run=a.dry_run)
     config=TransferConfig(multipart_threshold=64*1024*1024,multipart_chunksize=16*1024*1024,max_concurrency=4,use_threads=True)
-    done=0; transferred=0; errors=0; started=time.monotonic()
+    done=0; transferred=0; errors=0; uploaded=0; skipped=0; planned=0; started=time.monotonic()
     def one(item):
         f,rel,size=item; key=prefix+rel
         digest=md5_file(f) if a.verify=="checksum" or a.immutable else ""
@@ -85,11 +85,14 @@ def main():
             status,rel,size,msg=future.result()
             done+=1
             if status in ("uploaded","planned"): transferred+=size
+            if status=="uploaded": uploaded+=1
+            elif status=="skip": skipped+=1
+            elif status=="planned": planned+=1
             if status=="error": errors+=1
             elapsed=max(.001,time.monotonic()-started)
             emit("progress",status=status,file=rel,done=done,files=len(files),bytes=transferred,total_bytes=total,
                  speed=int(transferred/elapsed),errors=errors,message=msg)
-    emit("finish",files=len(files),bytes=transferred,errors=errors,elapsed=round(time.monotonic()-started,2))
+    emit("finish",files=len(files),uploaded=uploaded,skipped=skipped,planned=planned,bytes=transferred,errors=errors,elapsed=round(time.monotonic()-started,2))
     log.close()
     return 1 if errors else 0
 if __name__=="__main__": sys.exit(main())
