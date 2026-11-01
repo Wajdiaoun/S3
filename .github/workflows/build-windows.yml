@@ -1,0 +1,43 @@
+name: Build Windows installer
+on:
+  push:
+    branches: [feature/windows-native]
+    tags: ['windows-v*']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/build-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r windows/requirements.txt pyinstaller
+      - name: Build native transfer engine
+        run: pyinstaller --noconfirm --clean --onefile --console --name nfs2s3_engine windows/nfs2s3_engine.py
+      - name: Build graphical application
+        run: pyinstaller --noconfirm --clean --onefile --windowed --name NFS2S3 windows/nfs2s3_windows.py
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package | Out-Null
+          Copy-Item dist/NFS2S3.exe package/
+          Copy-Item dist/nfs2s3_engine.exe package/
+          "NFS2S3 Windows x64 - Lancez NFS2S3.exe. Aucun WSL, Bash ou Python requis. Le moteur nfs2s3_engine.exe doit rester dans le même dossier. Le partage NFS doit être monté par Windows avant le transfert." | Set-Content package/LISEZMOI.txt -Encoding UTF8
+          Compress-Archive -Path package/* -DestinationPath NFS2S3-Windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NFS2S3-Windows-x64
+          path: NFS2S3-Windows-x64.zip
+      - name: Publish release asset
+        if: startsWith(github.ref, 'refs/tags/windows-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: NFS2S3-Windows-x64.zip
