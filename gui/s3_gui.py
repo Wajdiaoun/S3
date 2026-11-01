@@ -3,6 +3,7 @@
 import os, shutil, sys, json
 from pathlib import Path
 from PySide6.QtCore import QProcess, QProcessEnvironment
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (QApplication,QCheckBox,QComboBox,QFileDialog,QFormLayout,QFrame,
  QGridLayout,QHBoxLayout,QLabel,QLineEdit,QMainWindow,QMessageBox,QProgressBar,QPushButton,
  QPlainTextEdit,QSpinBox,QTabWidget,QVBoxLayout,QWidget)
@@ -132,7 +133,7 @@ class MainWindow(QMainWindow):
 
     def output(self):
         data=bytes(self.proc.readAllStandardOutput()).decode("utf-8",errors="replace")
-        self.console.moveCursor(self.console.textCursor().End); self.console.insertPlainText(data); self.console.ensureCursorVisible()
+        self.console.moveCursor(QTextCursor.End); self.console.insertPlainText(data); self.console.ensureCursorVisible()
         for line in data.replace("\\r","\\n").splitlines():
             if '"stats"' not in line: 
                 if "Vérification d'intégrité" in line:self.metrics["phase"].setText("Vérification")
