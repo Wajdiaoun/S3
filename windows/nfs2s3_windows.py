@@ -25,7 +25,7 @@ def panel():
 class Window(QMainWindow):
  def __init__(self):
     super().__init__();self.setWindowTitle("NFS2S3 — Windows");self.resize(1050,760)
-    self.base=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parent))
+    self.base=(Path(sys.executable).resolve().parent if getattr(sys,"frozen",False) else Path(__file__).resolve().parent)
     self.engine=self.base/"nfs2s3_engine.py"
     self.proc=QProcess(self);self.proc.setProcessChannelMode(QProcess.MergedChannels)
     self.proc.readyReadStandardOutput.connect(self.read);self.proc.finished.connect(self.finished)
