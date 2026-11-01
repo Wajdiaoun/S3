@@ -82,7 +82,11 @@ class Window(QMainWindow):
     if self.sk.text():env.insert("AWS_SECRET_ACCESS_KEY",self.sk.text())
     self.proc.setProcessEnvironment(env);self.go.setEnabled(False);self.stop.setEnabled(True)
     self.status.setText("● EN COURS");self.bar.setValue(0);self.started=time.monotonic()
-    self.proc.start(sys.executable,args)
+    if getattr(sys,"frozen",False):
+      engine_bin=self.base/"nfs2s3_engine.exe"
+      if not engine_bin.exists():QMessageBox.critical(self,"Moteur absent","nfs2s3_engine.exe est introuvable dans le dossier de l’application.");self.go.setEnabled(True);self.stop.setEnabled(False);return
+      self.proc.start(str(engine_bin),args[1:])
+    else:self.proc.start(sys.executable,args)
  def read(self):
     self.buffer+=bytes(self.proc.readAllStandardOutput()).decode("utf-8",errors="replace")
     while "\n" in self.buffer:
