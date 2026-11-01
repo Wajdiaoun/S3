@@ -59,6 +59,7 @@ jobs:
           cp nfs2s3.sh AppDir/usr/share/nfs2s3/
           cp vendor/rclone vendor/jq AppDir/usr/bin/
           cp gui/nfs2s3.desktop AppDir/usr/share/applications/
+          cp gui/nfs2s3.desktop AppDir/nfs2s3.desktop
           cp gui/nfs2s3.svg AppDir/usr/share/icons/hicolor/scalable/apps/nfs2s3.svg
           cp gui/nfs2s3.svg AppDir/nfs2s3.svg
           cat > AppDir/AppRun <<'EOF'
