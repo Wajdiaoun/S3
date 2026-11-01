@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=NFS2S3
+Comment=Transfert sécurisé de montages NFS vers S3
+Exec=nfs2s3-gui
+Icon=nfs2s3
+Categories=Utility;System;
+Terminal=false
+StartupNotify=true
